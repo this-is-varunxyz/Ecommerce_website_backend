@@ -5,7 +5,7 @@ import productModel from "../models/productModel.js"
 const addProduct = async (req, res) => {
     try {
 
-        const { name, description, price, category, subCategory, sizes, colors, bestseller } = req.body
+        const { name, description, price, category, subCategory, brand, sizes, colors, bestseller } = req.body
 
         const image1 = req.files.image1 && req.files.image1[0]
         const image2 = req.files.image2 && req.files.image2[0]
@@ -27,6 +27,7 @@ const addProduct = async (req, res) => {
             category,
             price: Number(price),
             subCategory,
+            brand: brand || '',
             bestseller: bestseller === "true" ? true : false,
             sizes: JSON.parse(sizes),
             colors: colors ? JSON.parse(colors) : [],
@@ -50,8 +51,20 @@ const addProduct = async (req, res) => {
 // function for list product
 const listProducts = async (req, res) => {
     try {
+        const { brand, category, subCategory } = req.query;
+        let filter = {};
         
-        const products = await productModel.find({});
+        if (brand) {
+            filter.brand = { $regex: brand, $options: 'i' };
+        }
+        if (category) {
+            filter.category = category;
+        }
+        if (subCategory) {
+            filter.subCategory = subCategory;
+        }
+        
+        const products = await productModel.find(filter);
         res.json({success:true,products})
 
     } catch (error) {
@@ -166,4 +179,15 @@ const getReviews = async (req, res) => {
     }
 }
 
-export { listProducts, addProduct, removeProduct, singleProduct, addReview, getReviews }
+// function to get all unique brands
+const getBrands = async (req, res) => {
+    try {
+        const brands = await productModel.distinct('brand', { brand: { $ne: '' } });
+        res.json({ success: true, brands });
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export { listProducts, addProduct, removeProduct, singleProduct, addReview, getReviews, getBrands }
